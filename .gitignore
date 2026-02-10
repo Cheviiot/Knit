@@ -1,0 +1,64 @@
+# Build output
+build/bin/
+bin/
+
+# AppImage build artifacts
+build/linux/appimage/build/
+build/linux/appimage/knit
+build/linux/appimage/knit.png
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/bindings/
+
+# Wails v3
+.task/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+.directory
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Wails
+wails.json.bak
+
+# Flatpak build artifacts
+flatpak/knit
+flatpak/build-dir/
+flatpak/.flatpak-builder/
+flatpak/repo/
+*.flatpak
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temp
+*.tmp
+*.temp
+.cache/
+
+# Package artifacts
+*.AppImage
+*.deb
+*.rpm
+*.pkg.tar.zst
