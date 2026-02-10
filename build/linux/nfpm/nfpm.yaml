@@ -1,0 +1,58 @@
+# Feel free to remove those if you don't want/need to use them.
+# Make sure to check the documentation at https://nfpm.goreleaser.com
+#
+# The lines below are called `modelines`. See `:help modeline`
+
+name: "knit"
+arch: ${GOARCH}
+platform: "linux"
+version: "1.0.0"
+section: "default"
+priority: "extra"
+maintainer: Cheviiot <https://github.com/Cheviiot>
+description: "Knit - Elegant desktop application for searching movie torrents"
+vendor: "Cheviiot"
+homepage: "https://github.com/Cheviiot/Knit"
+license: "MIT"
+release: "1"
+
+contents:
+  - src: "./bin/knit"
+    dst: "/usr/bin/knit"
+    file_info:
+      mode: 0755
+  # Icons in multiple sizes
+  - src: "./build/appicon.png"
+    dst: "/usr/share/icons/hicolor/512x512/apps/knit.png"
+  - src: "./build/appicon.png"
+    dst: "/usr/share/icons/hicolor/256x256/apps/knit.png"
+  - src: "./build/appicon.png"
+    dst: "/usr/share/icons/hicolor/128x128/apps/knit.png"
+  - src: "./build/appicon.png"
+    dst: "/usr/share/pixmaps/knit.png"
+  # Desktop entry
+  - src: "./build/linux/knit.desktop"
+    dst: "/usr/share/applications/knit.desktop"
+
+# Default dependencies for Debian 12/Ubuntu 22.04+ with WebKit 4.1
+depends:
+  - libgtk-3-0
+  - libwebkit2gtk-4.1-0
+
+# Distribution-specific overrides for different package formats and WebKit versions
+overrides:
+  # RPM packages for Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux
+  rpm:
+    depends:
+      - gtk3
+      - webkit2gtk4.1
+  
+  # Arch Linux packages (WebKit 4.1)  
+  archlinux:
+    depends:
+      - gtk3
+      - webkit2gtk-4.1
+
+# scripts section to ensure desktop database is updated after install
+scripts:
+  postinstall: "./build/linux/nfpm/scripts/postinstall.sh"

@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Knit
+GenericName=Movie Torrent Search
+Comment=Elegant desktop application for searching movie torrents
+Exec=knit %U
+Icon=knit
+Categories=AudioVideo;Video;Network;
+Terminal=false
+Keywords=knit;torrent;movie;film;download;
+Version=1.0
+StartupNotify=true
+StartupWMClass=Knit
+MimeType=x-scheme-handler/magnet;
