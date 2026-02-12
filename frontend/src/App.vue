@@ -916,20 +916,15 @@ export default {
     },
     
     async updateImageBase() {
-      try {
-        this.imageBase = await GetCurrentImageBase()
-      } catch (e) {
-        this.imageBase = 'https://image.tmdb.org'
-      }
+      // No longer needed - using weserv.nl proxy
     },
     
     getImageUrl(path, size = 'w500') {
       if (!path) return ''
-      // Handle weserv.nl proxy
-      if (this.imageBase.includes('weserv.nl')) {
-        return `${this.imageBase}/t/p/${size}${path}`
-      }
-      return `${this.imageBase}/t/p/${size}${path}`
+      // Use weserv.nl as image proxy to bypass WebKit CSP restrictions
+      // weserv.nl fetches and caches images from TMDB
+      const tmdbImageUrl = `image.tmdb.org/t/p/${size}${path}`
+      return `https://images.weserv.nl/?url=${tmdbImageUrl}&n=-1`
     },
     
     // Handle image load error with retry
