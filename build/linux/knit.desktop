@@ -1,10 +1,14 @@
 [Desktop Entry]
 Type=Application
-Name=knit
-Exec=knit
+Name=Knit
+GenericName=Movie Torrent Search
+Comment=Elegant desktop application for searching movie torrents
+Exec=knit %U
 Icon=knit
-Categories=Development;
+Categories=AudioVideo;Video;Network;
 Terminal=false
-Keywords=wails
-Version=1.0
-StartupNotify=false
+Keywords=movies;torrents;films;video;download;
+Version=1.1
+StartupNotify=true
+StartupWMClass=knit
+MimeType=x-scheme-handler/magnet;

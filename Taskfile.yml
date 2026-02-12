@@ -58,3 +58,24 @@ tasks:
     summary: Builds and runs the Docker image
     cmds:
       - task: common:run:docker
+
+  # Linux packaging shortcuts
+  linux:appimage:
+    summary: Creates an AppImage for Linux
+    cmds:
+      - task: linux:create:appimage
+
+  linux:deb:
+    summary: Creates a DEB package for Linux
+    cmds:
+      - task: linux:create:deb
+
+  linux:rpm:
+    summary: Creates an RPM package for Linux
+    cmds:
+      - task: linux:create:rpm
+
+  linux:packages:
+    summary: Creates all Linux packages (AppImage, DEB, RPM)
+    cmds:
+      - task: linux:package

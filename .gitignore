@@ -2,6 +2,11 @@
 build/bin/
 bin/
 
+# AppImage build artifacts
+build/linux/appimage/build/
+build/linux/appimage/knit
+build/linux/appimage/knit.png
+
 # Frontend
 node_modules/
 frontend/dist/
@@ -51,3 +56,9 @@ npm-debug.log*
 *.tmp
 *.temp
 .cache/
+
+# Package artifacts
+*.AppImage
+*.deb
+*.rpm
+*.pkg.tar.zst

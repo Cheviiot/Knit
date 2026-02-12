@@ -121,6 +121,23 @@ tasks:
       - cp "{{.APP_BINARY}}" "{{.APP_NAME}}"
       - cp ../../appicon.png "{{.APP_NAME}}.png"
       - wails3 generate appimage -binary "{{.APP_NAME}}" -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/linux/appimage/build
+      # Copy icons to hicolor directories inside AppDir
+      - |
+        APPDIR="{{.ROOT_DIR}}/build/linux/appimage/build/{{.APP_NAME}}-x86_64.AppDir"
+        for size in 16 32 64 128 256 512; do
+          mkdir -p "$APPDIR/usr/share/icons/hicolor/${size}x${size}/apps"
+          if command -v convert >/dev/null 2>&1; then
+            convert "{{.APP_NAME}}.png" -resize ${size}x${size} "$APPDIR/usr/share/icons/hicolor/${size}x${size}/apps/{{.APP_NAME}}.png"
+          elif command -v magick >/dev/null 2>&1; then
+            magick "{{.APP_NAME}}.png" -resize ${size}x${size} "$APPDIR/usr/share/icons/hicolor/${size}x${size}/apps/{{.APP_NAME}}.png"
+          else
+            cp "{{.APP_NAME}}.png" "$APPDIR/usr/share/icons/hicolor/${size}x${size}/apps/{{.APP_NAME}}.png"
+          fi
+        done
+      # Rebuild AppImage with icons
+      - "{{.ROOT_DIR}}/build/linux/appimage/build/linuxdeploy-x86_64.AppImage --appdir={{.ROOT_DIR}}/build/linux/appimage/build/{{.APP_NAME}}-x86_64.AppDir --output=appimage"
+      # Move AppImage (wails may use Name from .desktop file for output name)
+      - mv *-x86_64.AppImage "{{.OUTPUT_DIR}}/{{.APP_NAME}}-x86_64.AppImage" 2>/dev/null || true
     vars:
       APP_NAME: '{{.APP_NAME}}'
       APP_BINARY: '../../../bin/{{.APP_NAME}}'
@@ -168,17 +185,12 @@ tasks:
       - wails3 tool package -name "{{.APP_NAME}}" -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
   generate:dotdesktop:
-    summary: Generates a `.desktop` file
+    summary: Copies the .desktop file
     dir: build
     cmds:
       - mkdir -p {{.ROOT_DIR}}/build/linux/appimage
-      - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop" -categories "{{.CATEGORIES}}"
     vars:
       APP_NAME: '{{.APP_NAME}}'
-      EXEC: '{{.APP_NAME}}'
-      ICON: '{{.APP_NAME}}'
-      CATEGORIES: 'Development;'
-      OUTPUTFILE: '{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop'
 
   run:
     cmds:

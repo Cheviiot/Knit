@@ -44,13 +44,48 @@
 
 ## 📦 Установка
 
+### 🐧 Linux (один клик)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Cheviiot/Knit/main/install.sh | bash
+```
+
+или с wget:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/Cheviiot/Knit/main/install.sh | bash
+```
+
+<details>
+<summary>🎨 Иконка не отображается?</summary>
+
+На некоторых дистрибутивах (ALT Linux, старые версии GNOME) иконка может не появиться автоматически. Выполните:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Cheviiot/Knit/main/install.sh | bash -s -- --icons
+```
+
+</details>
+
+<details>
+<summary>🗑️ Удаление</summary>
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Cheviiot/Knit/main/install.sh | bash -s -- --uninstall
+```
+
+</details>
+
 ### Готовые сборки
 
 Скачайте последнюю версию для вашей платформы в разделе [Releases](https://github.com/Cheviiot/Knit/releases):
 
-- **Windows**: `Knit-windows-amd64.exe`
-- **Linux**: `Knit-linux-amd64`
-- **macOS**: `Knit-macos-amd64` / `Knit-macos-arm64`
+| Платформа | Файл |
+|-----------|------|
+| **Linux** | `knit-x86_64.AppImage` |
+| **Windows** | `knit-windows-amd64.exe` |
+| **macOS Intel** | `Knit-amd64.dmg` |
+| **macOS Apple Silicon** | `Knit-arm64.dmg` |
 
 ### Требования
 
