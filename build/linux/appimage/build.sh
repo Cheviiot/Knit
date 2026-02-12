@@ -7,12 +7,19 @@ set -euxo pipefail
 
 # Define variables
 APP_DIR="${APP_NAME}.AppDir"
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 
 # Create AppDir structure
 mkdir -p "${APP_DIR}/usr/bin"
+mkdir -p "${APP_DIR}/apprun-hooks"
 cp -r "${APP_BINARY}" "${APP_DIR}/usr/bin/"
 cp "${ICON_PATH}" "${APP_DIR}/"
 cp "${DESKTOP_FILE}" "${APP_DIR}/"
+
+# Copy custom apprun hooks for environment variables
+if [ -d "${SCRIPT_DIR}/apprun-hooks" ]; then
+    cp -r "${SCRIPT_DIR}/apprun-hooks/"* "${APP_DIR}/apprun-hooks/" 2>/dev/null || true
+fi
 
 if [[ $(uname -m) == *x86_64* ]]; then
     # Download linuxdeploy and make it executable

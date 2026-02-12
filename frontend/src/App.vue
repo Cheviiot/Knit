@@ -917,8 +917,8 @@ export default {
     
     getImageUrl(path, size = 'w500') {
       if (!path) return ''
-      // Use imagetmdb.com as proxy (image.tmdb.org is blocked in Russia)
-      return `https://imagetmdb.com/t/p/${size}${path}`
+      // Use local proxy to avoid WebKit CSP blocking external images
+      return `/tmdb-image/${size}${path}`
     },
     
     // Handle image load error with retry

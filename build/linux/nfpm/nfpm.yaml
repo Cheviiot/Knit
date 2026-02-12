@@ -17,7 +17,13 @@ license: "MIT"
 release: "1"
 
 contents:
+  # Main binary goes to /usr/lib/knit
   - src: "./bin/knit"
+    dst: "/usr/lib/knit/knit-bin"
+    file_info:
+      mode: 0755
+  # Wrapper script that sets environment variables
+  - src: "./build/linux/nfpm/knit-wrapper.sh"
     dst: "/usr/bin/knit"
     file_info:
       mode: 0755
