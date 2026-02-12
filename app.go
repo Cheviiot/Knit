@@ -91,6 +91,30 @@ type TMDBMovie struct {
 	GenreIDs      []int   `json:"genre_ids"`
 }
 
+// TMDBTVShow represents a TV show from TMDB
+type TMDBTVShow struct {
+	ID            int      `json:"id"`
+	Name          string   `json:"name"`
+	OriginalName  string   `json:"original_name"`
+	Overview      string   `json:"overview"`
+	PosterPath    string   `json:"poster_path"`
+	BackdropPath  string   `json:"backdrop_path"`
+	FirstAirDate  string   `json:"first_air_date"`
+	VoteAverage   float64  `json:"vote_average"`
+	VoteCount     int      `json:"vote_count"`
+	Popularity    float64  `json:"popularity"`
+	GenreIDs      []int    `json:"genre_ids"`
+	OriginCountry []string `json:"origin_country"`
+}
+
+// TMDBTVSearchResponse represents TMDB TV search response
+type TMDBTVSearchResponse struct {
+	Page         int          `json:"page"`
+	Results      []TMDBTVShow `json:"results"`
+	TotalPages   int          `json:"total_pages"`
+	TotalResults int          `json:"total_results"`
+}
+
 // TMDBGenre represents a genre from TMDB
 type TMDBGenre struct {
 	ID   int    `json:"id"`
@@ -476,6 +500,39 @@ func (a *App) GetPopularMovies(page int) (*TMDBSearchResponse, error) {
 	return &resp, nil
 }
 
+// SearchTMDBTV searches for TV shows on TMDB via proxy
+func (a *App) SearchTMDBTV(query string) (*TMDBTVSearchResponse, error) {
+	path := fmt.Sprintf("/search/tv?api_key=%s&query=%s&language=ru-RU", tmdbAPIKey, url.QueryEscape(query))
+	body, err := a.tmdbRequest(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp TMDBTVSearchResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+	return &resp, nil
+}
+
+// GetPopularTVShows gets popular TV shows from TMDB via proxy
+func (a *App) GetPopularTVShows(page int) (*TMDBTVSearchResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	path := fmt.Sprintf("/tv/popular?api_key=%s&language=ru-RU&page=%d", tmdbAPIKey, page)
+	body, err := a.tmdbRequest(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp TMDBTVSearchResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+	return &resp, nil
+}
+
 // formatBytes converts bytes to human readable string
 func formatBytes(bytes int64) string {
 	const unit = 1024
@@ -572,6 +629,44 @@ func (a *App) SearchWithMovie(movie TMDBMovie, serverID string) ([]TorrentResult
 	if movie.OriginalTitle != "" && movie.ReleaseDate != "" && len(movie.ReleaseDate) >= 4 {
 		year := movie.ReleaseDate[:4]
 		query := fmt.Sprintf("%s %s", movie.OriginalTitle, year)
+		results, err = a.SearchTorrents(serverID, query)
+		if err == nil && len(results) > 0 {
+			return results, nil
+		}
+	}
+
+	// Return last error or empty results
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+// SearchWithTVShow searches for torrents with TV show title
+func (a *App) SearchWithTVShow(show TMDBTVShow, serverID string) ([]TorrentResult, error) {
+	var results []TorrentResult
+	var err error
+
+	// Try original (English) name first - usually better results
+	if show.OriginalName != "" {
+		results, err = a.SearchTorrents(serverID, show.OriginalName)
+		if err == nil && len(results) > 0 {
+			return results, nil
+		}
+	}
+
+	// Try Russian name
+	if show.Name != "" && show.Name != show.OriginalName {
+		results, err = a.SearchTorrents(serverID, show.Name)
+		if err == nil && len(results) > 0 {
+			return results, nil
+		}
+	}
+
+	// Try original name with year
+	if show.OriginalName != "" && show.FirstAirDate != "" && len(show.FirstAirDate) >= 4 {
+		year := show.FirstAirDate[:4]
+		query := fmt.Sprintf("%s %s", show.OriginalName, year)
 		results, err = a.SearchTorrents(serverID, query)
 		if err == nil && len(results) > 0 {
 			return results, nil

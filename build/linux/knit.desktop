@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Knit
+Name=knit
 GenericName=Movie Torrent Search
-Comment=Elegant desktop application for searching movie torrents
+Comment=Knit - Elegant desktop application for searching movie torrents
 Exec=knit %U
 Icon=knit
 Categories=AudioVideo;Video;Network;

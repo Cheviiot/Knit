@@ -19,8 +19,8 @@
             v-model="searchQuery" 
             type="text" 
             class="search-input" 
-            placeholder="Поиск фильмов..."
-            @keyup.enter="searchMovies"
+            :placeholder="contentType === 'movies' ? 'Поиск фильмов...' : 'Поиск сериалов...'"
+            @keyup.enter="searchContent"
           />
           <button v-if="searchQuery" class="search-clear" @click="clearSearch">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -31,6 +31,33 @@
       </div>
       
       <div class="titlebar-right">
+        <div class="content-type-toggle" style="--wails-draggable:no-drag">
+          <button 
+            class="toggle-btn" 
+            :class="{ active: contentType === 'movies' }" 
+            @click="switchContentType('movies')"
+            title="Фильмы"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+              <line x1="7" y1="2" x2="7" y2="22"/>
+              <line x1="17" y1="2" x2="17" y2="22"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+            </svg>
+          </button>
+          <button 
+            class="toggle-btn" 
+            :class="{ active: contentType === 'tv' }" 
+            @click="switchContentType('tv')"
+            title="Сериалы"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+              <polyline points="17 2 12 7 7 2"/>
+            </svg>
+          </button>
+        </div>
+        
         <button class="titlebar-btn" @click="showSettings = true" title="Настройки" style="--wails-draggable:no-drag">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
@@ -62,7 +89,7 @@
       </div>
       
       <!-- Movies Grid -->
-      <div v-else-if="movies.length > 0" class="movies-section">
+      <div v-else-if="contentType === 'movies' && movies.length > 0" class="movies-section">
         <h2 class="section-title">
           {{ isSearchResult ? 'Результаты поиска' : 'Популярные фильмы' }}
           <span class="count">({{ movies.length }})</span>
@@ -119,6 +146,58 @@
         </div>
       </div>
       
+      <!-- TV Shows Grid -->
+      <div v-else-if="contentType === 'tv' && tvShows.length > 0" class="movies-section">
+        <h2 class="section-title">
+          {{ isSearchResult ? 'Результаты поиска' : 'Популярные сериалы' }}
+          <span class="count">({{ tvShows.length }})</span>
+        </h2>
+        
+        <div class="movies-grid">
+          <div 
+            v-for="show in tvShows" 
+            :key="show.id" 
+            class="movie-card group"
+            @click="selectTVShow(show)"
+          >
+            <div class="movie-poster">
+              <img 
+                v-if="show.poster_path" 
+                :src="getImageUrl(show.poster_path, 'w500')" 
+                :alt="show.name"
+                loading="lazy"
+                class="transition-transform duration-300 group-hover:scale-105"
+              />
+              <div v-else class="no-poster">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                  <polyline points="17 2 12 7 7 2"/>
+                </svg>
+              </div>
+              <!-- Hover overlay with gradient -->
+              <div class="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <!-- Rating badge -->
+              <div class="movie-rating" v-if="show.vote_average">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                {{ show.vote_average.toFixed(1) }}
+              </div>
+            </div>
+            <div class="movie-info">
+              <h3 class="movie-title">{{ show.name }}</h3>
+              <p class="movie-year">{{ getYear(show.first_air_date) }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Loading More Indicator -->
+        <div v-if="loadingMore" class="loading-more">
+          <div class="spinner"></div>
+          <p>Загрузка...</p>
+        </div>
+      </div>
+      
       <!-- Empty State -->
       <div v-else class="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -126,7 +205,7 @@
           <path d="M21 21l-4.35-4.35"/>
         </svg>
         <h3>Начните поиск</h3>
-        <p>Введите название фильма в строке поиска</p>
+        <p>{{ contentType === 'movies' ? 'Введите название фильма в строке поиска' : 'Введите название сериала в строке поиска' }}</p>
       </div>
     </main>
     
@@ -246,6 +325,121 @@
                       <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
                     </svg>
                     Magnet
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+    
+    <!-- TV Show Details Modal -->
+    <Transition name="modal">
+      <div v-if="selectedTVShow" class="modal-overlay" @click.self="closeTVModal">
+        <div class="movie-modal">
+          <!-- Backdrop на весь фон -->
+          <div class="modal-backdrop">
+            <img v-if="selectedTVShow.backdrop_path" :src="getImageUrl(selectedTVShow.backdrop_path, 'w1280')" />
+            <div class="backdrop-overlay"></div>
+          </div>
+          
+          <button class="modal-close" @click="closeTVModal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+          
+          <div class="modal-content">
+            <div class="modal-poster">
+              <img 
+                v-if="selectedTVShow.poster_path" 
+                :src="getImageUrl(selectedTVShow.poster_path, 'w500')" 
+              />
+            </div>
+            
+            <div class="modal-info">
+              <h2 class="modal-title">{{ selectedTVShow.name }}</h2>
+              <p class="modal-original" v-if="selectedTVShow.original_name !== selectedTVShow.name">
+                {{ selectedTVShow.original_name }}
+              </p>
+              
+              <div class="modal-meta">
+                <span class="meta-item" v-if="selectedTVShow.first_air_date">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  {{ formatDate(selectedTVShow.first_air_date) }}
+                </span>
+                <span class="meta-item rating" v-if="selectedTVShow.vote_average">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                  {{ selectedTVShow.vote_average.toFixed(1) }}
+                </span>
+              </div>
+              
+              <p class="modal-overview">{{ selectedTVShow.overview || 'Описание отсутствует' }}</p>
+            </div>
+          </div>
+          
+          <!-- Torrents Section -->
+          <div v-if="torrentsLoading || torrents.length > 0 || torrentsError" class="torrents-section">
+            <h3 class="torrents-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Торренты
+              <span v-if="torrents.length" class="count">({{ torrents.length }})</span>
+            </h3>
+            
+            <div v-if="torrentsLoading" class="torrents-loading">
+              <div class="spinner"></div>
+              <span>Поиск торрентов...</span>
+            </div>
+            
+            <div v-else-if="torrentsError" class="torrents-error">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {{ torrentsError }}
+            </div>
+            
+            <div v-else class="torrents-list">
+              <div v-for="(torrent, index) in torrents" :key="index" class="torrent-item">
+                <div class="torrent-info">
+                  <h4 class="torrent-title">{{ torrent.title }}</h4>
+                  <div class="torrent-meta">
+                    <span class="torrent-size">{{ torrent.sizeStr }}</span>
+                    <span class="torrent-seeds">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 12l10 10 10-10L12 2z"/>
+                      </svg>
+                      {{ torrent.seeders }}
+                    </span>
+                    <span class="torrent-tracker" v-if="torrent.tracker">{{ torrent.tracker }}</span>
+                  </div>
+                </div>
+                <div class="torrent-actions">
+                  <button class="torrent-btn btn-copy" @click="copyMagnet(torrent.magnetUri)" title="Копировать magnet">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                    </svg>
+                  </button>
+                  <button class="torrent-btn btn-download" @click="downloadTorrent(torrent)" title="Скачать через FDM">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -497,7 +691,7 @@
 </template>
 
 <script>
-import { GetPublicServers, SearchTorrents, SearchTMDB, GetPopularMovies, SearchWithMovie, GetSettings, SaveSettings, GetTMDBProxies, CheckServerByID, CheckTMDBProxyByID, GetCurrentImageBase, AddMagnet, AddTorrentURL, GetDownloads, RemoveDownload, OpenDownloadFolder, OpenFDM, CopyMagnetToClipboard } from '../bindings/knit/app.js'
+import { GetPublicServers, SearchTorrents, SearchTMDB, SearchTMDBTV, GetPopularMovies, GetPopularTVShows, SearchWithMovie, SearchWithTVShow, GetSettings, SaveSettings, GetTMDBProxies, CheckServerByID, CheckTMDBProxyByID, GetCurrentImageBase, AddMagnet, AddTorrentURL, GetDownloads, RemoveDownload, OpenDownloadFolder, OpenFDM, CopyMagnetToClipboard } from '../bindings/knit/app.js'
 import { Application, Window, Clipboard } from '@wailsio/runtime'
 
 // Window helpers
@@ -510,11 +704,14 @@ export default {
   data() {
     return {
       searchQuery: '',
+      contentType: 'movies', // 'movies' or 'tv'
       movies: [],
+      tvShows: [],
       servers: [],
       tmdbProxies: [],
       selectedServer: 'jacred_xyz',
       selectedMovie: null,
+      selectedTVShow: null,
       torrents: [],
       downloads: [],
       showDownloads: false,
@@ -558,7 +755,7 @@ export default {
       return proxy ? proxy.name : 'Выбрать прокси'
     },
     isModalOpen() {
-      return this.selectedMovie || this.showSettings || this.showDownloads
+      return this.selectedMovie || this.selectedTVShow || this.showSettings || this.showDownloads
     }
   },
   watch: {
@@ -851,7 +1048,11 @@ export default {
       
       // If there's no scrollbar (content fits on screen), load more
       if (scrollHeight <= clientHeight + 100) {
-        this.loadPopularMovies(false)
+        if (this.contentType === 'movies') {
+          this.loadPopularMovies(false)
+        } else {
+          this.loadPopularTVShows(false)
+        }
       }
     },
     
@@ -884,7 +1085,11 @@ export default {
       
       // Load more when user is 300px from bottom
       if (scrollTop + clientHeight >= scrollHeight - 300) {
-        this.loadPopularMovies(false)
+        if (this.contentType === 'movies') {
+          this.loadPopularMovies(false)
+        } else {
+          this.loadPopularTVShows(false)
+        }
       }
     },
     
@@ -909,7 +1114,11 @@ export default {
     
     clearSearch() {
       this.searchQuery = ''
-      this.loadPopularMovies()
+      if (this.contentType === 'movies') {
+        this.loadPopularMovies()
+      } else {
+        this.loadPopularTVShows()
+      }
     },
     
     selectMovie(movie) {
@@ -945,6 +1154,124 @@ export default {
       }
       
       this.torrentsLoading = false
+    },
+    
+    // TV Shows methods
+    selectTVShow(show) {
+      this.selectedTVShow = show
+      this.torrents = []
+      this.torrentsError = null
+      // Автоматически начинаем поиск торрентов
+      this.searchTVTorrents()
+    },
+    
+    closeTVModal() {
+      this.selectedTVShow = null
+      this.torrents = []
+      this.torrentsError = null
+    },
+    
+    async searchTVTorrents() {
+      if (!this.selectedTVShow) return
+      
+      this.torrentsLoading = true
+      this.torrentsError = null
+      this.torrents = []
+      
+      try {
+        const results = await SearchWithTVShow(this.selectedTVShow, this.selectedServer)
+        this.torrents = results || []
+        
+        if (this.torrents.length === 0) {
+          this.torrentsError = 'Торренты не найдены. Попробуйте другой сервер.'
+        }
+      } catch (e) {
+        this.torrentsError = `Ошибка: ${e.message || e}`
+      }
+      
+      this.torrentsLoading = false
+    },
+    
+    async loadPopularTVShows(reset = true) {
+      if (reset) {
+        this.loading = true
+        this.currentPage = 1
+        this.hasMore = true
+        this.tvShows = []
+      } else {
+        this.loadingMore = true
+      }
+      
+      this.isSearchResult = false
+      
+      try {
+        const response = await GetPopularTVShows(this.currentPage)
+        if (response && response.results) {
+          if (reset) {
+            this.tvShows = response.results
+          } else {
+            this.tvShows = [...this.tvShows, ...response.results]
+          }
+          
+          // Check if there are more pages
+          this.hasMore = this.currentPage < response.total_pages && response.results.length > 0
+          this.currentPage++
+        }
+      } catch {
+        this.hasMore = false
+      }
+      
+      this.loading = false
+      this.loadingMore = false
+      
+      // Check if we need to load more content (e.g., on large screens)
+      this.$nextTick(() => {
+        this.checkNeedMoreContent()
+      })
+    },
+    
+    async searchTVShows() {
+      if (!this.searchQuery.trim()) {
+        await this.loadPopularTVShows()
+        return
+      }
+      
+      this.loading = true
+      this.isSearchResult = true
+      try {
+        const response = await SearchTMDBTV(this.searchQuery)
+        if (response && response.results) {
+          this.tvShows = response.results
+        }
+      } catch {
+        this.showToast('Ошибка поиска', 'error')
+      }
+      this.loading = false
+    },
+    
+    switchContentType(type) {
+      if (this.contentType === type) return
+      this.contentType = type
+      this.searchQuery = ''
+      this.isSearchResult = false
+      this.currentPage = 1
+      this.hasMore = true
+      
+      if (type === 'movies') {
+        this.tvShows = []
+        this.loadPopularMovies()
+      } else {
+        this.movies = []
+        this.loadPopularTVShows()
+      }
+    },
+    
+    async searchContent() {
+      if (this.contentType === 'movies') {
+        await this.searchMovies()
+      } else {
+        await this.searchTVShows()
+      }
     },
     
     async copyMagnet(magnetUri) {
@@ -1232,6 +1559,45 @@ body {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+/* Content Type Toggle */
+.content-type-toggle {
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  gap: 2px;
+  margin-right: 8px;
+}
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.toggle-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.toggle-btn svg {
+  flex-shrink: 0;
 }
 
 /* Search Box */

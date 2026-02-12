@@ -121,11 +121,7 @@ tasks:
       - cp "{{.APP_BINARY}}" "{{.APP_NAME}}"
       - cp ../../appicon.png "{{.APP_NAME}}.png"
       - wails3 generate appimage -binary "{{.APP_NAME}}" -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/linux/appimage/build
-      # wails creates Knit-x86_64.AppImage (from Name=Knit in .desktop) but expects knit-x86_64.AppImage
-      # So we rename it right after wails creates it
-      - mv "{{.ROOT_DIR}}/build/linux/appimage/build/Knit-x86_64.AppImage" "{{.ROOT_DIR}}/build/linux/appimage/build/{{.APP_NAME}}-x86_64.AppImage" 2>/dev/null || true
       # Copy icons to hicolor directories inside AppDir for better desktop integration
-      # Note: wails creates AppDir with lowercase name from -binary (knit-x86_64.AppDir)
       - |
         APPDIR="{{.ROOT_DIR}}/build/linux/appimage/build/{{.APP_NAME}}-x86_64.AppDir"
         for size in 16 32 64 128 256 512; do
@@ -138,10 +134,9 @@ tasks:
             cp "{{.APP_NAME}}.png" "$APPDIR/usr/share/icons/hicolor/${size}x${size}/apps/{{.APP_NAME}}.png"
           fi
         done
-      # Rebuild AppImage with embedded icons (creates Knit-x86_64.AppImage due to Name=Knit in .desktop)
+      # Rebuild AppImage with embedded icons
       - "{{.ROOT_DIR}}/build/linux/appimage/build/linuxdeploy-x86_64.AppImage --appdir={{.ROOT_DIR}}/build/linux/appimage/build/{{.APP_NAME}}-x86_64.AppDir --output=appimage"
-      # Rename Knit -> knit for consistency
-      - mv Knit-x86_64.AppImage "{{.OUTPUT_DIR}}/{{.APP_NAME}}-x86_64.AppImage"
+      - mv "{{.APP_NAME}}-x86_64.AppImage" "{{.OUTPUT_DIR}}/{{.APP_NAME}}-x86_64.AppImage"
     vars:
       APP_NAME: '{{.APP_NAME}}'
       APP_BINARY: '../../../bin/{{.APP_NAME}}'
