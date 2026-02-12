@@ -109,6 +109,7 @@
                 :alt="movie.title"
                 loading="lazy"
                 class="transition-transform duration-300 group-hover:scale-105"
+                @error="handleImageError($event, movie.poster_path, 'w500')"
               />
               <div v-else class="no-poster">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -167,6 +168,7 @@
                 :alt="show.name"
                 loading="lazy"
                 class="transition-transform duration-300 group-hover:scale-105"
+                @error="handleImageError($event, show.poster_path, 'w500')"
               />
               <div v-else class="no-poster">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -215,7 +217,7 @@
         <div class="movie-modal">
           <!-- Backdrop на весь фон -->
           <div class="modal-backdrop">
-            <img v-if="selectedMovie.backdrop_path" :src="getImageUrl(selectedMovie.backdrop_path, 'w1280')" />
+            <img v-if="selectedMovie.backdrop_path" :src="getImageUrl(selectedMovie.backdrop_path, 'w1280')" @error="handleImageError($event, selectedMovie.backdrop_path, 'w1280')" />
             <div class="backdrop-overlay"></div>
           </div>
           
@@ -229,7 +231,8 @@
             <div class="modal-poster">
               <img 
                 v-if="selectedMovie.poster_path" 
-                :src="getImageUrl(selectedMovie.poster_path, 'w500')" 
+                :src="getImageUrl(selectedMovie.poster_path, 'w500')"
+                @error="handleImageError($event, selectedMovie.poster_path, 'w500')"
               />
             </div>
             
@@ -340,7 +343,7 @@
         <div class="movie-modal">
           <!-- Backdrop на весь фон -->
           <div class="modal-backdrop">
-            <img v-if="selectedTVShow.backdrop_path" :src="getImageUrl(selectedTVShow.backdrop_path, 'w1280')" />
+            <img v-if="selectedTVShow.backdrop_path" :src="getImageUrl(selectedTVShow.backdrop_path, 'w1280')" @error="handleImageError($event, selectedTVShow.backdrop_path, 'w1280')" />
             <div class="backdrop-overlay"></div>
           </div>
           
@@ -354,7 +357,8 @@
             <div class="modal-poster">
               <img 
                 v-if="selectedTVShow.poster_path" 
-                :src="getImageUrl(selectedTVShow.poster_path, 'w500')" 
+                :src="getImageUrl(selectedTVShow.poster_path, 'w500')"
+                @error="handleImageError($event, selectedTVShow.poster_path, 'w500')"
               />
             </div>
             
@@ -738,7 +742,8 @@ export default {
       imageBase: 'https://image.tmdb.org',
       openDropdown: null,
       scrollThrottleTimer: null,
-      resizeDebounceTimer: null
+      resizeDebounceTimer: null,
+      imageRetries: {} // Track retry counts for images
     }
   },
   computed: {
@@ -925,6 +930,43 @@ export default {
         return `${this.imageBase}/t/p/${size}${path}`
       }
       return `${this.imageBase}/t/p/${size}${path}`
+    },
+    
+    // Handle image load error with retry
+    handleImageError(event, path, size = 'w500') {
+      const key = `${path}_${size}`
+      const maxRetries = 3
+      const retryDelay = 1000 // 1 second
+      
+      if (!this.imageRetries[key]) {
+        this.imageRetries[key] = 0
+      }
+      
+      this.imageRetries[key]++
+      
+      if (this.imageRetries[key] <= maxRetries) {
+        // Retry loading with cache-busting parameter
+        setTimeout(() => {
+          const newUrl = this.getImageUrl(path, size) + `?retry=${this.imageRetries[key]}`
+          event.target.src = newUrl
+        }, retryDelay * this.imageRetries[key])
+      } else {
+        // Max retries reached, hide the image or show placeholder
+        event.target.style.display = 'none'
+        // Show the no-poster placeholder by triggering parent's fallback
+        const posterDiv = event.target.closest('.movie-poster')
+        if (posterDiv) {
+          const placeholder = posterDiv.querySelector('.no-poster')
+          if (placeholder) {
+            placeholder.style.display = 'flex'
+          }
+        }
+      }
+    },
+    
+    // Reset image retries when content changes
+    resetImageRetries() {
+      this.imageRetries = {}
     },
     
     async loadSettings() {
