@@ -86,8 +86,8 @@ tasks:
       - task: go:mod:tidy
     sources:
       - "**/*.[jt]s"
-      - exclude: frontend/**/*
-      - frontend/bindings/**/*  # Rerun when switching between dev/production mode causes changes in output
+      - "!frontend/**/*"
+      - frontend/bindings/**/*
       - "**/*.go"
       - go.mod
       - go.sum

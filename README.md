@@ -9,16 +9,17 @@
 </p>
 
 <p align="center">
-  <a href="#особенности">Особенности</a> •
-  <a href="#скриншоты">Скриншоты</a> •
-  <a href="#установка">Установка</a> •
-  <a href="#настройка">Настройка</a> •
-  <a href="#сборка">Сборка</a>
+  <a href="https://github.com/Cheviiot/Knit/releases"><img src="https://img.shields.io/github/v/release/Cheviiot/Knit?style=flat-square&color=blue" alt="Release"></a>
+  <a href="https://github.com/Cheviiot/Knit/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Cheviiot/Knit?style=flat-square" alt="License"></a>
+  <a href="https://github.com/Cheviiot/Knit/actions"><img src="https://img.shields.io/github/actions/workflow/status/Cheviiot/Knit/release.yml?style=flat-square" alt="Build"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Cheviiot">👤 Cheviiot</a> •
-  <a href="https://github.com/Cheviiot/Knit">📦 GitHub</a>
+  <a href="#-особенности">Особенности</a> •
+  <a href="#-установка">Установка</a> •
+  <a href="#%EF%B8%8F-настройка">Настройка</a> •
+  <a href="#-сборка-из-исходников">Сборка</a> •
+  <a href="#-лицензия">Лицензия</a>
 </p>
 
 ---
@@ -31,15 +32,15 @@
 - 🎨 **Современный интерфейс** — минималистичный дизайн с тёмной темой
 - 🖼️ **Красивые карточки** — постеры, рейтинги, описания фильмов
 - 📱 **Адаптивный дизайн** — корректное отображение на любом размере окна
-- 🚀 **Нативная производительность** — построен на Go + Wails
+- 🚀 **Нативная производительность** — построен на Go + Wails v3
 
 ## 🛠️ Технологии
 
 | Backend | Frontend | Интеграции |
 |---------|----------|------------|
-| Go 1.25 | Vue 3 | TMDB API |
-| Wails 3 | Vite | Публичные Jackett серверы |
-| | Tailwind CSS | Free Download Manager |
+| Go 1.24 | Vue 3 | TMDB API |
+| Wails v3 | Vite | Публичные Jackett серверы |
+| | Tailwind CSS 4 | Free Download Manager |
 
 ## 📦 Установка
 
@@ -70,9 +71,9 @@
 
 ### Требования
 
-- Go 1.25+
-- Node.js 20+
-- Task (task runner)
+- [Go 1.24+](https://go.dev/dl/)
+- [Node.js 20+](https://nodejs.org/)
+- [Task](https://taskfile.dev/) (task runner)
 - Wails CLI v3
 
 ### Установка Wails CLI v3
@@ -136,50 +137,15 @@ task linux:appimage
 task linux:package
 ```
 
-### Сборка для Android
-
-```bash
-# Установка зависимостей (Android SDK, NDK)
-task android:install:deps
-
-# Сборка APK (arm64)
-task android:build ARCH=arm64
-
-# Сборка APK (x86_64 для эмулятора)
-task android:build ARCH=amd64
-
-# Упаковка в APK
-task android:package
-
-# Fat APK (все архитектуры)
-task android:package:fat
-
-# Запуск на эмуляторе
-task android:run
-```
-
-### Сборка для iOS (только macOS)
-
-```bash
-# Установка зависимостей
-task ios:install:deps
-
-# Сборка
-task ios:build
-
-# Запуск в симуляторе
-task ios:run
-```
-
 ## 🎯 Поддерживаемые платформы
 
 | Платформа | Архитектуры | Статус |
 |-----------|-------------|--------|
-| Linux | amd64, arm64 | ✅ Полная поддержка |
+| Linux | amd64 | ✅ Полная поддержка |
 | Windows | amd64 | ✅ Полная поддержка |
 | macOS | amd64, arm64 | ✅ Полная поддержка |
-| Android | arm64, x86_64 | ✅ Полная поддержка |
-| iOS | arm64 | 🧪 Экспериментально |
+
+> 📱 **Android/iOS**: Поддержка мобильных платформ появится когда Wails v3 выйдет из alpha-версии.
 
 ## 📁 Структура проекта
 
@@ -203,12 +169,12 @@ Knit/
 │   └── linux/             # Конфигурация Linux
 └── .github/
     └── workflows/
-        └── build.yml      # CI/CD сборка
+        └── release.yml    # CI/CD сборка
 ```
 
 ## 🤝 Вклад в проект
 
-Pull requests приветствуются! Для крупных изменений сначала откройте issue.
+Pull requests приветствуются! Для крупных изменений сначала откройте [issue](https://github.com/Cheviiot/Knit/issues).
 
 ## 📄 Лицензия
 
@@ -217,5 +183,5 @@ Pull requests приветствуются! Для крупных изменен
 ---
 
 <p align="center">
-  Сделано с ❤️ <a href="https://github.com/Cheviiot">Cheviiot</a>
+  Сделано с ❤️ by <a href="https://github.com/Cheviiot">Cheviiot</a>
 </p>
