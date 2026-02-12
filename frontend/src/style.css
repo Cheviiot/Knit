@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Force system cursor */
+* {
+  cursor: inherit;
+}
+
+html, body {
+  cursor: default;
+}
+
 *,
 *::before,
 *::after {
