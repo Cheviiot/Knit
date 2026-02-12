@@ -109,7 +109,6 @@
                 :alt="movie.title"
                 loading="lazy"
                 class="transition-transform duration-300 group-hover:scale-105"
-                @error="handleImageError($event, movie.poster_path, 'w500')"
               />
               <div v-else class="no-poster">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -168,7 +167,6 @@
                 :alt="show.name"
                 loading="lazy"
                 class="transition-transform duration-300 group-hover:scale-105"
-                @error="handleImageError($event, show.poster_path, 'w500')"
               />
               <div v-else class="no-poster">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -217,7 +215,7 @@
         <div class="movie-modal">
           <!-- Backdrop на весь фон -->
           <div class="modal-backdrop">
-            <img v-if="selectedMovie.backdrop_path" :src="getImageUrl(selectedMovie.backdrop_path, 'w1280')" @error="handleImageError($event, selectedMovie.backdrop_path, 'w1280')" />
+            <img v-if="selectedMovie.backdrop_path" :src="getImageUrl(selectedMovie.backdrop_path, 'w1280')" />
             <div class="backdrop-overlay"></div>
           </div>
           
@@ -232,7 +230,6 @@
               <img 
                 v-if="selectedMovie.poster_path" 
                 :src="getImageUrl(selectedMovie.poster_path, 'w500')"
-                @error="handleImageError($event, selectedMovie.poster_path, 'w500')"
               />
             </div>
             
@@ -343,7 +340,7 @@
         <div class="movie-modal">
           <!-- Backdrop на весь фон -->
           <div class="modal-backdrop">
-            <img v-if="selectedTVShow.backdrop_path" :src="getImageUrl(selectedTVShow.backdrop_path, 'w1280')" @error="handleImageError($event, selectedTVShow.backdrop_path, 'w1280')" />
+            <img v-if="selectedTVShow.backdrop_path" :src="getImageUrl(selectedTVShow.backdrop_path, 'w1280')" />
             <div class="backdrop-overlay"></div>
           </div>
           
@@ -358,7 +355,6 @@
               <img 
                 v-if="selectedTVShow.poster_path" 
                 :src="getImageUrl(selectedTVShow.poster_path, 'w500')"
-                @error="handleImageError($event, selectedTVShow.poster_path, 'w500')"
               />
             </div>
             
@@ -916,15 +912,13 @@ export default {
     },
     
     async updateImageBase() {
-      // No longer needed - using weserv.nl proxy
+      // No longer needed - using imagetmdb.com proxy
     },
     
     getImageUrl(path, size = 'w500') {
       if (!path) return ''
-      // Use weserv.nl as image proxy to bypass WebKit CSP restrictions
-      // weserv.nl fetches and caches images from TMDB
-      const tmdbImageUrl = `image.tmdb.org/t/p/${size}${path}`
-      return `https://images.weserv.nl/?url=${tmdbImageUrl}&n=-1`
+      // Use imagetmdb.com as proxy (image.tmdb.org is blocked in Russia)
+      return `https://imagetmdb.com/t/p/${size}${path}`
     },
     
     // Handle image load error with retry
@@ -940,7 +934,7 @@ export default {
       this.imageRetries[key]++
       
       if (this.imageRetries[key] <= maxRetries) {
-        // Retry loading with cache-busting parameter
+        // Retry loading via backend
         setTimeout(() => {
           const newUrl = this.getImageUrl(path, size) + `?retry=${this.imageRetries[key]}`
           event.target.src = newUrl
@@ -1162,7 +1156,6 @@ export default {
       this.selectedMovie = movie
       this.torrents = []
       this.torrentsError = null
-      // Автоматически начинаем поиск торрентов
       this.searchTorrents()
     },
     
@@ -1198,7 +1191,6 @@ export default {
       this.selectedTVShow = show
       this.torrents = []
       this.torrentsError = null
-      // Автоматически начинаем поиск торрентов
       this.searchTVTorrents()
     },
     
@@ -1923,6 +1915,24 @@ body {
   height: 100%;
   object-fit: cover;
   content-visibility: auto;
+}
+
+.poster-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+}
+
+.spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--bg-tertiary);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 .no-poster {

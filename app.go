@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,12 +40,104 @@ var (
 	httpClientFast = &http.Client{Timeout: 5 * time.Second}
 )
 
+// Image cache
+var (
+	imageCache     = make(map[string]string)
+	imageCacheMu   sync.RWMutex
+	imageCacheDir  string
+)
+
 // App struct
 type App struct{}
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{}
+}
+
+// initImageCache initializes the image cache directory
+func initImageCache() {
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		cacheDir = "/tmp"
+	}
+	imageCacheDir = filepath.Join(cacheDir, "knit", "images")
+	os.MkdirAll(imageCacheDir, 0755)
+}
+
+// GetImageBase64 fetches an image from TMDB and returns it as base64 data URL
+func (a *App) GetImageBase64(path string, size string) string {
+	if path == "" {
+		return ""
+	}
+	
+	// Initialize cache dir if needed
+	if imageCacheDir == "" {
+		initImageCache()
+	}
+	
+	cacheKey := size + path
+	
+	// Check memory cache first
+	imageCacheMu.RLock()
+	if cached, ok := imageCache[cacheKey]; ok {
+		imageCacheMu.RUnlock()
+		return cached
+	}
+	imageCacheMu.RUnlock()
+	
+	// Check disk cache
+	cacheFile := filepath.Join(imageCacheDir, strings.ReplaceAll(cacheKey, "/", "_"))
+	if data, err := os.ReadFile(cacheFile); err == nil {
+		dataURL := string(data)
+		imageCacheMu.Lock()
+		imageCache[cacheKey] = dataURL
+		imageCacheMu.Unlock()
+		return dataURL
+	}
+	
+	// Fetch from TMDB
+	tmdbURL := fmt.Sprintf("https://image.tmdb.org/t/p/%s%s", size, path)
+	
+	req, err := http.NewRequest("GET", tmdbURL, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
+	
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != 200 {
+		return ""
+	}
+	
+	imageData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+	
+	// Determine content type
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+	
+	// Create data URL
+	dataURL := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(imageData))
+	
+	// Save to memory cache
+	imageCacheMu.Lock()
+	imageCache[cacheKey] = dataURL
+	imageCacheMu.Unlock()
+	
+	// Save to disk cache
+	os.WriteFile(cacheFile, []byte(dataURL), 0644)
+	
+	return dataURL
 }
 
 // OnStartup is called when the app starts (Wails v3 lifecycle)
