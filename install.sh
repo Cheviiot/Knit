@@ -106,7 +106,7 @@ get_latest_release() {
     local api_url="https://api.github.com/repos/${REPO}/releases/latest"
     local release_info
     
-    info "Fetching latest release info..."
+    echo -e "${BLUE}[INFO]${NC} Fetching latest release info..." >&2
     
     if command -v curl &> /dev/null; then
         release_info=$(curl -fsSL -g "$api_url")
@@ -115,16 +115,16 @@ get_latest_release() {
     fi
     
     # Try to find AppImage for architecture
-    local download_url=$(echo "$release_info" | grep -o "https://[^\"]*${APP_NAME}[^\"]*${arch}[^\"]*\.AppImage" | head -1)
+    local download_url=$(echo "$release_info" | grep -oE "https://[^\"]+${APP_NAME}[^\"]*${arch}[^\"]*\.AppImage" | head -1)
     
     # If not found, try case-insensitive
     if [ -z "$download_url" ]; then
-        download_url=$(echo "$release_info" | grep -oi "https://[^\"]*appimage[^\"]*" | grep -i "${arch}\|amd64\|x86_64" | head -1)
+        download_url=$(echo "$release_info" | grep -oiE "https://[^\"]+\.AppImage" | grep -i "${arch}\|amd64\|x86_64" | head -1)
     fi
     
     # If still not found, get any AppImage
     if [ -z "$download_url" ]; then
-        download_url=$(echo "$release_info" | grep -o "https://[^\"]*\.AppImage" | head -1)
+        download_url=$(echo "$release_info" | grep -oE "https://[^\"]+\.AppImage" | head -1)
     fi
     
     if [ -z "$download_url" ]; then
@@ -140,19 +140,19 @@ install_appimage() {
     local download_url=$(get_latest_release "$arch")
     local appimage_path="${INSTALL_DIR}/${APP_NAME}.AppImage"
     
-    info "Architecture: $arch"
-    info "Download URL: $download_url"
+    echo -e "${BLUE}[INFO]${NC} Architecture: $arch" >&2
+    echo -e "${BLUE}[INFO]${NC} Download URL: $download_url" >&2
     
     # Create install directory
     mkdir -p "$INSTALL_DIR"
     
     # Download AppImage
-    info "Downloading Knit..."
+    echo -e "${BLUE}[INFO]${NC} Downloading Knit..." >&2
     download "$download_url" "$appimage_path"
     
     # Make executable
     chmod +x "$appimage_path"
-    success "AppImage downloaded to $appimage_path"
+    echo -e "${GREEN}[OK]${NC} AppImage downloaded to $appimage_path" >&2
     
     echo "$appimage_path"
 }
