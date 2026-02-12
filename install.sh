@@ -92,7 +92,7 @@ download() {
     local output="$2"
     
     if command -v curl &> /dev/null; then
-        curl -fsSL "$url" -o "$output"
+        curl -fsSL -g "$url" -o "$output"
     elif command -v wget &> /dev/null; then
         wget -qO "$output" "$url"
     else
@@ -109,7 +109,7 @@ get_latest_release() {
     info "Fetching latest release info..."
     
     if command -v curl &> /dev/null; then
-        release_info=$(curl -fsSL "$api_url")
+        release_info=$(curl -fsSL -g "$api_url")
     else
         release_info=$(wget -qO- "$api_url")
     fi
