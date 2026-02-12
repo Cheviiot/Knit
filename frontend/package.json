@@ -1,7 +1,7 @@
 {
   "name": "knit-frontend",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "Cheviiot <https://github.com/Cheviiot>",
   "repository": {
     "type": "git",
