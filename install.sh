@@ -40,19 +40,19 @@ print_banner() {
 }
 
 info() {
-    echo -e "${BLUE}►${NC} $1"
+    echo -e "${BLUE}►${NC} $1" >&2
 }
 
 success() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}✓${NC} $1" >&2
 }
 
 warn() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo -e "${YELLOW}⚠${NC} $1" >&2
 }
 
 error() {
-    echo -e "${RED}✗${NC} $1"
+    echo -e "${RED}✗${NC} $1" >&2
     exit 1
 }
 
@@ -85,7 +85,7 @@ download() {
     local output="$2"
     
     if command -v curl &> /dev/null; then
-        curl -fsSL "$url" -o "$output"
+        curl -fsSL -o "$output" "$url"
     elif command -v wget &> /dev/null; then
         wget -qO "$output" "$url"
     else
@@ -107,7 +107,8 @@ get_binary_url() {
     fi
     
     # Find binary named "knit" (not AppImage, not deb, not rpm)
-    local download_url=$(echo "$release_info" | grep -oE '"browser_download_url":\s*"[^"]+"' | grep -oE 'https://[^"]+' | grep -E '/knit$' | head -1)
+    local download_url
+    download_url=$(echo "$release_info" | grep -oE '"browser_download_url":\s*"[^"]+"' | grep -oE 'https://[^"]+' | grep -E '/knit$' | head -1 | tr -d '\r\n')
     
     echo "$download_url"
 }
@@ -119,14 +120,16 @@ get_icon_url() {
 
 # Install binary
 install_binary() {
-    local binary_url=$(get_binary_url)
+    local binary_url
+    binary_url=$(get_binary_url)
+    binary_url=$(echo "$binary_url" | tr -d '[:space:]')
     local binary_path="${INSTALL_DIR}/${APP_NAME}-bin"
     
     # Create install directory
     mkdir -p "$INSTALL_DIR"
     
     if [ -n "$binary_url" ]; then
-        info "Загрузка Knit..."
+        info "Загрузка Knit из $binary_url..."
         download "$binary_url" "$binary_path"
     else
         warn "Бинарник не найден в релизе."
