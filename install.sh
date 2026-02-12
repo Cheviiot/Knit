@@ -57,6 +57,128 @@ error() {
     exit 1
 }
 
+# Detect Linux distribution
+detect_distro() {
+    local distro="unknown"
+    
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case "$ID" in
+            altlinux|alt)
+                distro="altlinux"
+                ;;
+            ubuntu|debian|linuxmint|pop)
+                distro="debian"
+                ;;
+            fedora|rhel|centos|rocky|almalinux)
+                distro="fedora"
+                ;;
+            arch|manjaro|endeavouros)
+                distro="arch"
+                ;;
+            opensuse*|suse*)
+                distro="suse"
+                ;;
+            *)
+                distro="$ID"
+                ;;
+        esac
+    elif [ -f /etc/altlinux-release ]; then
+        distro="altlinux"
+    elif [ -f /etc/debian_version ]; then
+        distro="debian"
+    elif [ -f /etc/fedora-release ]; then
+        distro="fedora"
+    elif [ -f /etc/arch-release ]; then
+        distro="arch"
+    fi
+    
+    echo "$distro"
+}
+
+# Fix webkit paths for non-Debian distros
+fix_webkit_paths() {
+    local distro="$1"
+    
+    # Debian-based distros have webkit in the expected path
+    if [ "$distro" = "debian" ]; then
+        return 0
+    fi
+    
+    info "Checking WebKit compatibility for $distro..."
+    
+    # Check if webkit symlinks are needed
+    local ubuntu_webkit_dir="/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1"
+    
+    # If the directory already exists with proper files, skip
+    if [ -f "$ubuntu_webkit_dir/WebKitNetworkProcess" ] && [ ! -L "$ubuntu_webkit_dir/WebKitNetworkProcess" ]; then
+        return 0
+    fi
+    
+    # Find actual webkit location
+    local webkit_network=""
+    local webkit_web=""
+    local webkit_bundle=""
+    
+    case "$distro" in
+        altlinux)
+            webkit_network="/usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess"
+            webkit_web="/usr/libexec/webkit2gtk-4.1/WebKitWebProcess"
+            webkit_bundle="/usr/lib64/webkit2gtk-4.1/injected-bundle"
+            ;;
+        fedora|arch|suse)
+            # Try common locations
+            webkit_network=$(find /usr/libexec -name "WebKitNetworkProcess" -path "*webkit2gtk-4.1*" 2>/dev/null | head -1)
+            webkit_web=$(find /usr/libexec -name "WebKitWebProcess" -path "*webkit2gtk-4.1*" 2>/dev/null | head -1)
+            webkit_bundle=$(find /usr/lib* -type d -name "injected-bundle" -path "*webkit2gtk-4.1*" 2>/dev/null | head -1)
+            ;;
+        *)
+            # Generic search
+            webkit_network=$(find /usr -name "WebKitNetworkProcess" -path "*webkit2gtk-4.1*" 2>/dev/null | head -1)
+            webkit_web=$(find /usr -name "WebKitWebProcess" -path "*webkit2gtk-4.1*" 2>/dev/null | head -1)
+            webkit_bundle=$(find /usr -type d -name "injected-bundle" -path "*webkit2gtk-4.1*" 2>/dev/null | head -1)
+            ;;
+    esac
+    
+    # Check if we found webkit
+    if [ -z "$webkit_network" ] || [ ! -f "$webkit_network" ]; then
+        warn "WebKit not found. AppImage may not work correctly."
+        warn "Try installing: webkit2gtk-4.1 (or equivalent for your distro)"
+        return 1
+    fi
+    
+    # Create symlinks (requires sudo)
+    info "Creating WebKit compatibility symlinks (requires sudo)..."
+    
+    if ! sudo -n true 2>/dev/null; then
+        echo -e "${YELLOW}[NOTE]${NC} sudo access needed for WebKit compatibility."
+        echo "       If AppImage doesn't start, run these commands manually:"
+        echo ""
+        echo "  sudo mkdir -p $ubuntu_webkit_dir"
+        [ -n "$webkit_network" ] && echo "  sudo ln -sf $webkit_network $ubuntu_webkit_dir/WebKitNetworkProcess"
+        [ -n "$webkit_web" ] && echo "  sudo ln -sf $webkit_web $ubuntu_webkit_dir/WebKitWebProcess"
+        [ -n "$webkit_bundle" ] && echo "  sudo ln -sf $webkit_bundle $ubuntu_webkit_dir/injected-bundle"
+        echo ""
+        return 0
+    fi
+    
+    sudo mkdir -p "$ubuntu_webkit_dir"
+    
+    if [ -n "$webkit_network" ] && [ -f "$webkit_network" ]; then
+        sudo ln -sf "$webkit_network" "$ubuntu_webkit_dir/WebKitNetworkProcess"
+    fi
+    
+    if [ -n "$webkit_web" ] && [ -f "$webkit_web" ]; then
+        sudo ln -sf "$webkit_web" "$ubuntu_webkit_dir/WebKitWebProcess"
+    fi
+    
+    if [ -n "$webkit_bundle" ] && [ -d "$webkit_bundle" ]; then
+        sudo ln -sf "$webkit_bundle" "$ubuntu_webkit_dir/injected-bundle"
+    fi
+    
+    success "WebKit symlinks created"
+}
+
 # Check dependencies
 check_deps() {
     local missing=""
@@ -366,8 +488,15 @@ main() {
         exit 0
     fi
     
+    # Detect distribution
+    local distro=$(detect_distro)
+    info "Detected distribution: $distro"
+    
     # Check dependencies
     check_deps
+    
+    # Fix webkit paths for non-Debian distros
+    fix_webkit_paths "$distro"
     
     # Install
     local appimage_path=$(install_appimage)
