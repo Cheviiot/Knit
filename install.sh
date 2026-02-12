@@ -113,11 +113,6 @@ get_binary_url() {
     echo "$download_url"
 }
 
-# Get icon URL from repo
-get_icon_url() {
-    echo "https://raw.githubusercontent.com/${REPO}/main/build/appicon.png"
-}
-
 # Install binary
 install_binary() {
     local binary_url
@@ -143,43 +138,60 @@ install_binary() {
 
 # Install icon
 install_icon() {
-    local icon_url=$(get_icon_url)
-    local tmpfile=$(mktemp)
-    
     info "Установка иконок..."
     
-    # Download icon
+    local icon_url="https://raw.githubusercontent.com/${REPO}/main/build/appicon.png"
+    local tmpfile=$(mktemp)
+    
+    # Download main icon
     download "$icon_url" "$tmpfile" 2>/dev/null || {
         warn "Не удалось загрузить иконку"
         rm -f "$tmpfile"
         return 0
     }
     
-    # Create icon directories and copy
+    # Create all icon directories
     for size in 512 256 128 64 48 32 16; do
         mkdir -p "${ICON_DIR}/${size}x${size}/apps"
-        
-        # Resize if ImageMagick available, otherwise copy original
-        if command -v magick &> /dev/null; then
-            magick "$tmpfile" -resize ${size}x${size} "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || \
-            cp "$tmpfile" "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || true
-        elif command -v convert &> /dev/null; then
-            convert "$tmpfile" -resize ${size}x${size} "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || \
-            cp "$tmpfile" "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || true
-        else
-            cp "$tmpfile" "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || true
-        fi
     done
     
-    # Also put in pixmaps
+    # Install icons - try to resize if ImageMagick available
+    if command -v magick &> /dev/null; then
+        for size in 512 256 128 64 48 32 16; do
+            magick "$tmpfile" -resize ${size}x${size} "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || \
+            cp "$tmpfile" "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || true
+        done
+    elif command -v convert &> /dev/null; then
+        for size in 512 256 128 64 48 32 16; do
+            convert "$tmpfile" -resize ${size}x${size} "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || \
+            cp "$tmpfile" "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || true
+        done
+    else
+        # No ImageMagick - copy original to all sizes (will still work, just not optimal)
+        for size in 512 256 128 64 48 32 16; do
+            cp "$tmpfile" "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" 2>/dev/null || true
+        done
+    fi
+    
+    # Also install to pixmaps (fallback location)
     mkdir -p "${HOME}/.local/share/pixmaps"
     cp "$tmpfile" "${HOME}/.local/share/pixmaps/${APP_NAME}.png" 2>/dev/null || true
     
+    # Install to applications folder icon (for some DEs)
+    mkdir -p "${HOME}/.local/share/icons"
+    cp "$tmpfile" "${HOME}/.local/share/icons/${APP_NAME}.png" 2>/dev/null || true
+    
     rm -f "$tmpfile"
     
-    # Update icon cache
+    # Update icon caches
     if command -v gtk-update-icon-cache &> /dev/null; then
         gtk-update-icon-cache -f -t "$ICON_DIR" 2>/dev/null || true
+    fi
+    
+    if command -v xdg-icon-resource &> /dev/null; then
+        for size in 512 256 128 64 48 32 16; do
+            xdg-icon-resource install --novendor --size $size "${ICON_DIR}/${size}x${size}/apps/${APP_NAME}.png" "$APP_NAME" 2>/dev/null || true
+        done
     fi
     
     success "Иконки установлены"
